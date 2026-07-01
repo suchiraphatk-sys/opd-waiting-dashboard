@@ -55,8 +55,8 @@ Maximum Wait (min)
 </div>
 
 <div class="card">
-Wait > 60 min
-<div class="kpi" id="over60">0%</div>
+Wait > 30 min
+<div class="kpi" id="over30">0%</div>
 </div>
 
 </div>
@@ -165,8 +165,8 @@ avg.toFixed(1);
 document.getElementById("max").innerHTML=
 Math.max(...waits,0);
 
-document.getElementById("over60").innerHTML=
-((waits.filter(x=>x>60).length/data.length)*100||0).toFixed(1)+"%";
+document.getElementById("over30").innerHTML=
+((waits.filter(x=>x>30).length/data.length)*100||0).toFixed(1)+"%";
 
 
 // Daily
