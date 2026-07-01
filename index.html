@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>OPD Pharmacy Waiting Time Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
+<style>
+body{font-family:Arial,sans-serif;margin:20px;background:#f5f6fa}
+.card{background:white;padding:15px;border-radius:10px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
+.kpi{font-size:28px;font-weight:bold}
+canvas{background:white;padding:10px}
+</style>
+</head>
+
+<body>
+
+<h1>OPD Pharmacy Waiting Time Dashboard</h1>
+
+<div class="card">
+<input type="file" id="csvFile" accept=".csv">
+
+<br><br>
+
+From:
+<input type="date" id="fromDate">
+
+To:
+<input type="date" id="toDate">
+
+<button onclick="updateDashboard()">Filter</button>
+</div>
+
+
+<div class="grid">
+
+<div class="card">
+จำนวน Visit
+<div class="kpi" id="total">0</div>
+</div>
+
+<div class="card">
+Average Wait (min)
+<div class="kpi" id="avg">0</div>
+</div>
+
+<div class="card">
+Maximum Wait (min)
+<div class="kpi" id="max">0</div>
+</div>
+
+<div class="card">
+Wait > 60 min
+<div class="kpi" id="over60">0%</div>
+</div>
+
+</div>
+
+
+<div class="card">
+<h3>Daily Waiting Trend</h3>
+<canvas id="dailyChart"></canvas>
+</div>
+
+
+<div class="card">
+<h3>Hourly Waiting Analysis</h3>
+<canvas id="hourChart"></canvas>
+</div>
+
+
+<div class="card">
+<h3>Monthly Summary</h3>
+<table id="table" class="display">
+<thead>
+<tr>
+<th>Date</th>
+<th>Visit</th>
+<th>Average</th>
+<th>Maximum</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+
+<script>
+
+let rawData=[];
+let dailyChart;
+let hourChart;
+
+
+document.getElementById("csvFile").addEventListener("change",e=>{
+
+Papa.parse(e.target.files[0],{
+header:true,
+skipEmptyLines:true,
+complete:function(result){
+
+rawData=result.data.map(r=>{
+
+let d=new Date(r.DISPENSERED);
+
+return {
+
+date:d.toISOString().slice(0,10),
+
+hour:d.getHours(),
+
+wait:Number(r.VST_WAIT_MIN)||0,
+
+queue:r.QUEUE
+
+}
+
+});
+
+document.getElementById("fromDate").value=
+rawData[0].date;
+
+document.getElementById("toDate").value=
+rawData[rawData.length-1].date;
+
+
+updateDashboard();
+
+}
+
+});
+
+
+});
+
+
+function updateDashboard(){
+
+let from=document.getElementById("fromDate").value;
+let to=document.getElementById("toDate").value;
+
+
+let data=rawData.filter(x=>
+x.date>=from && x.date<=to
+);
+
+
+let waits=data.map(x=>x.wait);
+
+
+let avg =
+waits.reduce((a,b)=>a+b,0)/waits.length || 0;
+
+
+document.getElementById("total").innerHTML=data.length;
+
+document.getElementById("avg").innerHTML=
+avg.toFixed(1);
+
+document.getElementById("max").innerHTML=
+Math.max(...waits,0);
+
+document.getElementById("over60").innerHTML=
+((waits.filter(x=>x>60).length/data.length)*100||0).toFixed(1)+"%";
+
+
+// Daily
+
+let daily={};
+
+data.forEach(x=>{
+
+if(!daily[x.date])
+daily[x.date]=[];
+
+daily[x.date].push(x.wait);
+
+});
+
+
+let labels=Object.keys(daily);
+
+let avgDaily=labels.map(d=>
+daily[d].reduce((a,b)=>a+b,0)/daily[d].length
+);
+
+
+if(dailyChart)
+dailyChart.destroy();
+
+
+dailyChart=new Chart(
+document.getElementById("dailyChart"),
+{
+
+type:"line",
+
+data:{
+labels:labels,
+
+datasets:[{
+label:"Average Wait (min)",
+data:avgDaily
+}]
+
+}
+
+});
+
+
+
+// Hour
+
+let hour={};
+
+data.forEach(x=>{
+
+if(!hour[x.hour])
+hour[x.hour]=[];
+
+hour[x.hour].push(x.wait);
+
+});
+
+
+let hLabels=Object.keys(hour);
+
+let hAvg=hLabels.map(h=>
+hour[h].reduce((a,b)=>a+b,0)/hour[h].length
+);
+
+
+if(hourChart)
+hourChart.destroy();
+
+
+hourChart=new Chart(
+document.getElementById("hourChart"),
+{
+
+type:"bar",
+
+data:{
+labels:hLabels.map(x=>x+":00"),
+
+datasets:[{
+label:"Average Wait",
+data:hAvg
+}]
+
+}
+
+});
+
+
+
+// Table
+
+let tbody=document.querySelector("#table tbody");
+
+tbody.innerHTML="";
+
+
+labels.forEach(d=>{
+
+let w=daily[d];
+
+tbody.innerHTML+=`
+
+<tr>
+<td>${d}</td>
+<td>${w.length}</td>
+<td>${(w.reduce((a,b)=>a+b,0)/w.length).toFixed(1)}</td>
+<td>${Math.max(...w)}</td>
+</tr>
+
+`;
+
+});
+
+
+}
+
+</script>
+
+</body>
+</html>
