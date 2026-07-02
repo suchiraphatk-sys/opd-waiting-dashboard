@@ -52,6 +52,27 @@
         font-size: 28px;
         font-weight: bold;
       }
+
+      table {
+        width: 100%;
+
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 8px;
+
+        border: 1px solid #ddd;
+
+        text-align: center;
+      }
+
+      th {
+        background: #1976d2;
+
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -110,8 +131,75 @@
 
     <div class="panel"><canvas id="hourChart"></canvas></div>
 
+    <div class="panel">
+      <h2>Monthly Summary</h2>
+
+      <table id="monthlyTable">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Visit</th>
+            <th>Average</th>
+            <th>Median</th>
+            <th>Maximum</th>
+            <th>>30%</th>
+            <th>>60%</th>
+          </tr>
+        </thead>
+
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Average Waiting by Month</h3>
+
+      <div style="height: 350px">
+        <canvas id="avgMonthChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Median Waiting by Month</h3>
+
+      <div style="height: 350px">
+        <canvas id="medianMonthChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Maximum Waiting by Month</h3>
+
+      <div style="height: 350px">
+        <canvas id="maxMonthChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Waiting >30 Minutes</h3>
+
+      <div style="height: 350px">
+        <canvas id="over30MonthChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Waiting >60 Minutes</h3>
+
+      <div style="height: 350px">
+        <canvas id="over60MonthChart"></canvas>
+      </div>
+    </div>
+
     <script>
       let uploadFileName = "";
+      let monthlySummary = {};
+
+      let avgMonthChart;
+      let medianMonthChart;
+      let maxMonthChart;
+      let over30MonthChart;
+      let over60MonthChart;
 
       let rawData = [],
         dailyChart,
@@ -136,14 +224,22 @@
           header: true,
           skipEmptyLines: true,
           complete: (r) => {
-            rawData = r.data.map((x) => {
-              let d = new Date(x.DISPENSERED);
-              return {
-                date: d.toISOString().slice(0, 10),
-                hour: d.getHours(),
-                wait: Number(x.VST_WAIT_MIN) || 0,
-              };
-            });
+            rawData = r.data
+              .map((x) => {
+                let d = new Date(x.DISPENSERED);
+
+                if (isNaN(d.getTime())) return null;
+
+                return {
+                  date: d.toISOString().slice(0, 10),
+                  hour: d.getHours(),
+                  wait: Number(x.VST_WAIT_MIN) || 0,
+                };
+              })
+              .filter(Boolean);
+
+            buildMonthlySummary();
+            drawMonthlyDashboard();
 
             if (rawData.length) {
               let today = new Date();
@@ -213,6 +309,17 @@
 
         let w = data.map((x) => x.wait);
 
+        if (data.length == 0) {
+          total.innerHTML = 0;
+          avg.innerHTML = "-";
+          median.innerHTML = "-";
+          max.innerHTML = "-";
+          over30.innerHTML = "-";
+          over60.innerHTML = "-";
+
+          return;
+        }
+
         let medianValue = calculateMedian([...w]);
 
         total.innerHTML = data.length;
@@ -235,7 +342,8 @@
 
         let d = {};
         data.forEach((x) => (d[x.date] ??= []).push(x.wait));
-        let labels = Object.keys(d);
+        //let labels = Object.keys(d);
+        let labels = Object.keys(d).sort();
         if (dailyChart) dailyChart.destroy();
         dailyChart = new Chart(document.getElementById("dailyChart"), {
           type: "line",
@@ -252,19 +360,27 @@
           },
         });
 
-        let h = {};
-        data.forEach((x) => (h[x.hour] ??= []).push(x.wait));
+        let hourlySummary = {};
+
+        data.forEach((x) => (hourlySummary[x.hour] ??= []).push(x.wait));
+
+        let hours = Object.keys(hourlySummary)
+          .map(Number)
+          .sort((a, b) => a - b);
+
         if (hourChart) hourChart.destroy();
+
         hourChart = new Chart(document.getElementById("hourChart"), {
           type: "bar",
           data: {
-            labels: Object.keys(h),
+            labels: hours.map((h) => h.toString().padStart(2, "0") + ":00"),
             datasets: [
               {
                 label: "Average Wait",
-                data: Object.values(h).map(
-                  (a) => a.reduce((x, y) => x + y, 0) / a.length,
-                ),
+                data: hours.map((h) => {
+                  let arr = hourlySummary[h];
+                  return arr.reduce((a, b) => a + b, 0) / arr.length;
+                }),
               },
             ],
           },
@@ -281,6 +397,200 @@
         } else {
           return (values[mid - 1] + values[mid]) / 2;
         }
+      }
+
+      function buildMonthlySummary() {
+        monthlySummary = {};
+
+        rawData.forEach((r) => {
+          let d = new Date(r.date);
+
+          let key =
+            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+
+          if (!monthlySummary[key]) {
+            monthlySummary[key] = {
+              waits: [],
+            };
+          }
+
+          monthlySummary[key].waits.push(r.wait);
+        });
+      }
+
+      function drawMonthlyDashboard() {
+        let months = [];
+
+        let avgData = [];
+
+        let medianData = [];
+
+        let maxData = [];
+
+        let over30Data = [];
+
+        let over60Data = [];
+
+        let tbody = document.querySelector("#monthlyTable tbody");
+
+        tbody.innerHTML = "";
+
+        Object.keys(monthlySummary)
+          .sort()
+          .forEach((month) => {
+            //let w = monthlySummary[month];
+            let w = monthlySummary[month].waits;
+
+            let avg = w.reduce((a, b) => a + b, 0) / w.length;
+
+            let median = calculateMedian([...w]);
+
+            let max = Math.max(...w);
+
+            let over30 = (w.filter((x) => x > 30).length / w.length) * 100;
+
+            let over60 = (w.filter((x) => x > 60).length / w.length) * 100;
+
+            //months.push(month);
+            let label = new Date(month + "-01").toLocaleDateString("th-TH", {
+              month: "short",
+              year: "numeric",
+            });
+
+            months.push(label);
+
+            avgData.push(avg);
+
+            medianData.push(median);
+
+            maxData.push(max);
+
+            over30Data.push(over30);
+
+            over60Data.push(over60);
+
+            tbody.innerHTML += `
+
+<tr>
+
+<td>${label}</td>
+
+
+<td>${w.length}</td>
+
+<td>${avg.toFixed(1)}</td>
+
+<td>${median.toFixed(1)}</td>
+
+<td>${max}</td>
+
+<td>${over30.toFixed(1)}%</td>
+
+<td>${over60.toFixed(1)}%</td>
+
+</tr>
+
+`;
+          });
+
+        avgMonthChart = drawBarChart(
+          avgMonthChart,
+
+          "avgMonthChart",
+
+          "Average Waiting",
+
+          months,
+
+          avgData,
+        );
+
+        medianMonthChart = drawBarChart(
+          medianMonthChart,
+
+          "medianMonthChart",
+
+          "Median Waiting",
+
+          months,
+
+          medianData,
+        );
+
+        maxMonthChart = drawBarChart(
+          maxMonthChart,
+
+          "maxMonthChart",
+
+          "Max Waiting",
+
+          months,
+
+          maxData,
+        );
+
+        over30MonthChart = drawBarChart(
+          over30MonthChart,
+
+          "over30MonthChart",
+
+          "over-30-min Waiting",
+
+          months,
+
+          over30Data,
+        );
+
+        over60MonthChart = drawBarChart(
+          over60MonthChart,
+
+          "over60MonthChart",
+
+          "over-60-min Waiting",
+
+          months,
+
+          over60Data,
+        );
+      }
+
+      function drawBarChart(chart, canvasId, label, labels, values) {
+        if (chart) chart.destroy();
+
+        return new Chart(
+          document.getElementById(canvasId),
+
+          {
+            type: "bar",
+
+            data: {
+              labels,
+
+              datasets: [
+                {
+                  label,
+
+                  data: values,
+                },
+              ],
+            },
+
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          },
+        );
       }
     </script>
   </body>
