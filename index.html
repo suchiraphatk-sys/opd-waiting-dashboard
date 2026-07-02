@@ -168,9 +168,18 @@
           (x) => x.date >= fromDate.value && x.date <= toDate.value,
         );
 
-        let start = new Date(fromDate.value).toLocaleDateString("th-TH");
+        let options = {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        };
 
-        let end = new Date(toDate.value).toLocaleDateString("th-TH");
+        let start = new Date(fromDate.value).toLocaleDateString(
+          "th-TH",
+          options,
+        );
+
+        let end = new Date(toDate.value).toLocaleDateString("th-TH", options);
 
         document.getElementById("rangeText").innerHTML =
           "ข้อมูลที่แสดง: " + start + " ถึง " + end;
