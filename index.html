@@ -156,9 +156,9 @@
                   currentMonthData[currentMonthData.length - 1].date;
 
                 if (uploadFileName) {
-                  status.innerHTML = "โหลดจากไฟล์: " + uploadFileName;
+                  document.getElementById("status").innerHTML = "โหลดจากไฟล์: " + uploadFileName;
                 } else {
-                  status.innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+                  document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
                 }
 
                 //document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
