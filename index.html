@@ -1,88 +1,228 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-<meta charset="UTF-8">
-<title>OPD Pharmacy Waiting Time Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<style>
-body{font-family:Arial,sans-serif;margin:20px;background:#f4f6f9}
-.panel,.card{background:white;padding:20px;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,.08);margin-bottom:20px}
-.controls{display:flex;gap:20px;flex-wrap:wrap;align-items:end}
-label{font-weight:bold;display:block;margin-bottom:6px}
-input{padding:10px;border:1px solid #ccc;border-radius:8px}
-button{padding:11px 20px;border:0;border-radius:8px;background:#2563eb;color:white;font-weight:bold}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}
-.kpi{font-size:28px;font-weight:bold}
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>OPD Pharmacy Waiting Time Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f4f6f9;
+      }
+      .panel,
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+      }
+      .controls {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: end;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 6px;
+      }
+      input {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+      button {
+        padding: 11px 20px;
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        font-weight: bold;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+      }
+      .kpi {
+        font-size: 28px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>OPD Pharmacy Waiting Time Dashboard</h1>
 
-<h1>OPD Pharmacy Waiting Time Dashboard</h1>
+    <div class="panel">
+      <div class="controls">
+        <div>
+          <label>Upload CSV File</label
+          ><input type="file" id="csvFile" accept=".csv" />
+        </div>
+        <div><label>From Date</label><input type="date" id="fromDate" /></div>
+        <div><label>To Date</label><input type="date" id="toDate" /></div>
+        <button onclick="updateDashboard()">Apply Filter</button>
+      </div>
+      <p id="status">Loading default data...</p>
+    </div>
 
-<div class="panel">
-<div class="controls">
-<div><label>Upload CSV File</label><input type="file" id="csvFile" accept=".csv"></div>
-<div><label>From Date</label><input type="date" id="fromDate"></div>
-<div><label>To Date</label><input type="date" id="toDate"></div>
-<button onclick="updateDashboard()">Apply Filter</button>
-</div>
-<p id="status">Loading default data...</p>
-</div>
+    <div class="grid">
+      <div class="card">
+        จำนวน Visit
+        <div class="kpi" id="total">0</div>
+      </div>
+      <div class="card">
+        Average Wait
+        <div class="kpi" id="avg">0</div>
+      </div>
+      <div class="card">
+        Maximum Wait
+        <div class="kpi" id="max">0</div>
+      </div>
+      <div class="card">
+        Wait > 30 min
+        <div class="kpi" id="over30">0%</div>
+      </div>
+    </div>
 
-<div class="grid">
-<div class="card">จำนวน Visit<div class="kpi" id="total">0</div></div>
-<div class="card">Average Wait<div class="kpi" id="avg">0</div></div>
-<div class="card">Maximum Wait<div class="kpi" id="max">0</div></div>
-<div class="card">Wait > 30 min<div class="kpi" id="over30">0%</div></div>
-</div>
+    <div class="panel">
+      <h3>Daily Waiting Trend</h3>
 
-<div class="panel"><canvas id="dailyChart"></canvas></div>
-<div class="panel"><canvas id="hourChart"></canvas></div>
+      <h4 id="rangeText">ข้อมูลที่แสดง:</h4>
 
-<script>
-let rawData=[],dailyChart,hourChart;
+      <canvas id="dailyChart"></canvas>
+    </div>
 
-const defaultCSV="hagga.csv";
+    <div class="panel"><canvas id="hourChart"></canvas></div>
 
-window.onload=()=>loadCSV(defaultCSV);
+    <script>
+      let rawData = [],
+        dailyChart,
+        hourChart;
 
-csvFile.onchange=e=>loadCSV(URL.createObjectURL(e.target.files[0]));
+      const defaultCSV = "hagga.csv";
 
-function loadCSV(file){
-Papa.parse(file,{
-download:true,header:true,skipEmptyLines:true,
-complete:r=>{
-rawData=r.data.map(x=>{
-let d=new Date(x.DISPENSERED);
-return {date:d.toISOString().slice(0,10),hour:d.getHours(),wait:Number(x.VST_WAIT_MIN)||0}
-});
-if(rawData.length){
-fromDate.value=rawData[0].date;
-toDate.value=rawData[rawData.length-1].date;
-status.innerHTML="Loaded "+rawData.length+" records";
-updateDashboard();
-}}
-});
-}
+      window.onload = () => loadCSV(defaultCSV);
 
-function updateDashboard(){
-let data=rawData.filter(x=>x.date>=fromDate.value&&x.date<=toDate.value);
-let w=data.map(x=>x.wait);
-total.innerHTML=data.length;
-avg.innerHTML=(w.reduce((a,b)=>a+b,0)/w.length||0).toFixed(1);
-max.innerHTML=Math.max(...w,0);
-over30.innerHTML=((w.filter(x=>x>30).length/data.length)*100||0).toFixed(1)+"%";
+      csvFile.onchange = (e) => loadCSV(URL.createObjectURL(e.target.files[0]));
 
-let d={};data.forEach(x=>(d[x.date]??=[]).push(x.wait));
-let labels=Object.keys(d);
-if(dailyChart)dailyChart.destroy();
-dailyChart=new Chart(document.getElementById("dailyChart"),{type:"line",data:{labels,datasets:[{label:"Average Wait",data:labels.map(a=>d[a].reduce((x,y)=>x+y,0)/d[a].length)}]}});
+      function loadCSV(file) {
+        Papa.parse(file, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (r) => {
+            rawData = r.data.map((x) => {
+              let d = new Date(x.DISPENSERED);
+              return {
+                date: d.toISOString().slice(0, 10),
+                hour: d.getHours(),
+                wait: Number(x.VST_WAIT_MIN) || 0,
+              };
+            });
 
-let h={};data.forEach(x=>(h[x.hour]??=[]).push(x.wait));
-if(hourChart)hourChart.destroy();
-hourChart=new Chart(document.getElementById("hourChart"),{type:"bar",data:{labels:Object.keys(h),datasets:[{label:"Average Wait",data:Object.values(h).map(a=>a.reduce((x,y)=>x+y,0)/a.length)}]}});
-}
-</script>
-</body>
+            if (rawData.length) {
+              let today = new Date();
+
+              let currentMonth = today.getMonth();
+
+              let currentYear = today.getFullYear();
+
+              let currentMonthData = rawData.filter((x) => {
+                let d = new Date(x.date);
+
+                return (
+                  d.getMonth() == currentMonth && d.getFullYear() == currentYear
+                );
+              });
+
+              if (currentMonthData.length) {
+                fromDate.value = currentMonthData[0].date;
+
+                toDate.value =
+                  currentMonthData[currentMonthData.length - 1].date;
+
+                document.getElementById("status").innerHTML =
+                  "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+              } else {
+                fromDate.value = rawData[0].date;
+
+                toDate.value = rawData[rawData.length - 1].date;
+
+                document.getElementById("status").innerHTML =
+                  "ไม่พบข้อมูลเดือนปัจจุบัน แสดงข้อมูลทั้งหมด";
+              }
+
+              updateDashboard();
+            }
+          },
+        });
+      }
+
+      function updateDashboard() {
+        let data = rawData.filter(
+          (x) => x.date >= fromDate.value && x.date <= toDate.value,
+        );
+
+        let start = new Date(fromDate.value).toLocaleDateString("th-TH");
+
+        let end = new Date(toDate.value).toLocaleDateString("th-TH");
+
+        document.getElementById("rangeText").innerHTML =
+          "ข้อมูลที่แสดง: " + start + " ถึง " + end;
+
+        let w = data.map((x) => x.wait);
+        total.innerHTML = data.length;
+        avg.innerHTML = (w.reduce((a, b) => a + b, 0) / w.length || 0).toFixed(
+          1,
+        );
+        max.innerHTML = Math.max(...w, 0);
+        over30.innerHTML =
+          ((w.filter((x) => x > 30).length / data.length) * 100 || 0).toFixed(
+            1,
+          ) + "%";
+
+        let d = {};
+        data.forEach((x) => (d[x.date] ??= []).push(x.wait));
+        let labels = Object.keys(d);
+        if (dailyChart) dailyChart.destroy();
+        dailyChart = new Chart(document.getElementById("dailyChart"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Average Wait",
+                data: labels.map(
+                  (a) => d[a].reduce((x, y) => x + y, 0) / d[a].length,
+                ),
+              },
+            ],
+          },
+        });
+
+        let h = {};
+        data.forEach((x) => (h[x.hour] ??= []).push(x.wait));
+        if (hourChart) hourChart.destroy();
+        hourChart = new Chart(document.getElementById("hourChart"), {
+          type: "bar",
+          data: {
+            labels: Object.keys(h),
+            datasets: [
+              {
+                label: "Average Wait",
+                data: Object.values(h).map(
+                  (a) => a.reduce((x, y) => x + y, 0) / a.length,
+                ),
+              },
+            ],
+          },
+        });
+      }
+    </script>
+  </body>
 </html>
