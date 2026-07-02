@@ -79,6 +79,12 @@
         Average Wait
         <div class="kpi" id="avg">0</div>
       </div>
+
+      <div class="card">
+        Median Wait
+        <div class="kpi" id="median">0</div>
+      </div>
+
       <div class="card">
         Maximum Wait
         <div class="kpi" id="max">0</div>
@@ -86,6 +92,11 @@
       <div class="card">
         Wait > 30 min
         <div class="kpi" id="over30">0%</div>
+      </div>
+
+      <div class="card">
+        Wait > 60 min
+        <div class="kpi" id="over60">0%</div>
       </div>
     </div>
 
@@ -156,9 +167,11 @@
                   currentMonthData[currentMonthData.length - 1].date;
 
                 if (uploadFileName) {
-                  document.getElementById("status").innerHTML = "โหลดจากไฟล์: " + uploadFileName;
+                  document.getElementById("status").innerHTML =
+                    "โหลดจากไฟล์: " + uploadFileName;
                 } else {
-                  document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+                  document.getElementById("status").innerHTML =
+                    "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
                 }
 
                 //document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
@@ -199,13 +212,24 @@
           "ข้อมูลที่แสดง: " + start + " ถึง " + end;
 
         let w = data.map((x) => x.wait);
+
+        let median = calculateMedian([...w]);
+
         total.innerHTML = data.length;
         avg.innerHTML = (w.reduce((a, b) => a + b, 0) / w.length || 0).toFixed(
           1,
         );
+
+        median.innerHTML = median.toFixed(1);
+
         max.innerHTML = Math.max(...w, 0);
         over30.innerHTML =
           ((w.filter((x) => x > 30).length / data.length) * 100 || 0).toFixed(
+            1,
+          ) + "%";
+
+        over60.innerHTML =
+          ((w.filter((x) => x > 60).length / data.length) * 100 || 0).toFixed(
             1,
           ) + "%";
 
@@ -245,6 +269,18 @@
             ],
           },
         });
+      }
+
+      function calculateMedian(values) {
+        values.sort((a, b) => a - b);
+
+        let mid = Math.floor(values.length / 2);
+
+        if (values.length % 2) {
+          return values[mid];
+        } else {
+          return (values[mid - 1] + values[mid]) / 2;
+        }
       }
     </script>
   </body>
