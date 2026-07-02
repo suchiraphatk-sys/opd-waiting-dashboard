@@ -100,6 +100,8 @@
     <div class="panel"><canvas id="hourChart"></canvas></div>
 
     <script>
+      let uploadFileName = "";
+
       let rawData = [],
         dailyChart,
         hourChart;
@@ -108,7 +110,14 @@
 
       window.onload = () => loadCSV(defaultCSV);
 
-      csvFile.onchange = (e) => loadCSV(URL.createObjectURL(e.target.files[0]));
+      csvFile.onchange = function (e) {
+        let file = e.target.files[0];
+
+        uploadFileName = file.name;
+
+        loadCSV(URL.createObjectURL(file));
+      };
+      //csvFile.onchange = (e) => loadCSV(URL.createObjectURL(e.target.files[0]));
 
       function loadCSV(file) {
         Papa.parse(file, {
@@ -146,8 +155,13 @@
                 toDate.value =
                   currentMonthData[currentMonthData.length - 1].date;
 
-                document.getElementById("status").innerHTML =
-                  "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+                if (uploadFileName) {
+                  status.innerHTML = "โหลดจากไฟล์: " + uploadFileName;
+                } else {
+                  status.innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+                }
+
+                //document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
               } else {
                 fromDate.value = rawData[0].date;
 
