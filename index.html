@@ -213,14 +213,14 @@
 
         let w = data.map((x) => x.wait);
 
-        let median = calculateMedian([...w]);
+        let medianValue = calculateMedian([...w]);
 
         total.innerHTML = data.length;
         avg.innerHTML = (w.reduce((a, b) => a + b, 0) / w.length || 0).toFixed(
           1,
         );
 
-        median.innerHTML = median.toFixed(1);
+        median.innerHTML = medianValue.toFixed(1);
 
         max.innerHTML = Math.max(...w, 0);
         over30.innerHTML =
