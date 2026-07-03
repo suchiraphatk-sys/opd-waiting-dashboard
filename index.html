@@ -76,7 +76,7 @@
     </style>
   </head>
   <body>
-    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย (V0.2)</h2>
+    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย (V0.3)</h2>
 
     <div class="panel">
       <div class="controls">
@@ -152,7 +152,15 @@
     </div>
 
     <div class="panel">
-      <h3>Average Waiting by Month</h3>
+      <h3>Visit by Month</h3>
+      <div style="height: 350px">
+        <canvas id="visitMonthChart"></canvas>
+      </div>
+    </div>
+
+    
+    <div class="panel">
+      <h3>Average Waiting (min) by Month</h3>
 
       <div style="height: 350px">
         <canvas id="avgMonthChart"></canvas>
@@ -160,7 +168,7 @@
     </div>
 
     <div class="panel">
-      <h3>Median Waiting by Month</h3>
+      <h3>Median Waiting (min) by Month</h3>
 
       <div style="height: 350px">
         <canvas id="medianMonthChart"></canvas>
@@ -168,7 +176,7 @@
     </div>
 
     <div class="panel">
-      <h3>Maximum Waiting by Month</h3>
+      <h3>Maximum Waiting (min) by Month</h3>
 
       <div style="height: 350px">
         <canvas id="maxMonthChart"></canvas>
@@ -176,7 +184,7 @@
     </div>
 
     <div class="panel">
-      <h3>Waiting >30 Minutes</h3>
+      <h3>Waiting >30 Minutes (%)</h3>
 
       <div style="height: 350px">
         <canvas id="over30MonthChart"></canvas>
@@ -184,12 +192,13 @@
     </div>
 
     <div class="panel">
-      <h3>Waiting >60 Minutes</h3>
+      <h3>Waiting >60 Minutes (%)</h3>
 
       <div style="height: 350px">
         <canvas id="over60MonthChart"></canvas>
       </div>
     </div>
+
 
     <script>
       let uploadFileName = "";
@@ -200,6 +209,7 @@
       let maxMonthChart;
       let over30MonthChart;
       let over60MonthChart;
+      let visitMonthChart;
 
       let rawData = [],
         dailyChart,
@@ -430,6 +440,7 @@
         let over30Data = [];
 
         let over60Data = [];
+        let visitData = [];
 
         let tbody = document.querySelector("#monthlyTable tbody");
 
@@ -440,6 +451,8 @@
           .forEach((month) => {
             //let w = monthlySummary[month];
             let w = monthlySummary[month].waits;
+
+            visitData.push(w.length);
 
             let avg = w.reduce((a, b) => a + b, 0) / w.length;
 
@@ -551,6 +564,14 @@
           months,
 
           over60Data,
+        );
+
+        visitMonthChart = drawBarChart(
+          visitMonthChart,
+          "visitMonthChart",
+          "Visit",
+          months,
+          visitData,
         );
       }
 
