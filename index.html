@@ -76,7 +76,7 @@
     </style>
   </head>
   <body>
-    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย</h2>
+    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย (V0.2)</h2>
 
     <div class="panel">
       <div class="controls">
@@ -561,16 +561,24 @@
           document.getElementById(canvasId),
 
           {
-            type: "bar",
+            type: "line",
 
             data: {
-              labels,
-
+              labels: labels,
               datasets: [
                 {
-                  label,
-
+                  label: label,
                   data: values,
+
+                  borderWidth: 3,
+
+                  fill: false,
+
+                  tension: 0.3,
+
+                  pointRadius: 5,
+
+                  pointHoverRadius: 7,
                 },
               ],
             },
@@ -578,11 +586,13 @@
             options: {
               responsive: true,
               maintainAspectRatio: false,
+
               plugins: {
                 legend: {
                   display: false,
                 },
               },
+
               scales: {
                 y: {
                   beginAtZero: true,
