@@ -76,7 +76,7 @@
     </style>
   </head>
   <body>
-    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย (V0.4)</h2>
+    <h2>OPD Pharmacy Waiting Time Dashboard - โรงพยาบาลโกสุมพิสัย (V0.5)</h2>
 
     <div class="panel">
       <div class="controls">
@@ -215,7 +215,7 @@
         dailyChart,
         hourChart;
 
-      const defaultCSV = "hagga.csv";
+      const defaultCSV = "hygge.csv";
 
       window.onload = () => loadCSV(defaultCSV);
 
@@ -277,7 +277,7 @@
                     "โหลดจากไฟล์: " + uploadFileName;
                 } else {
                   document.getElementById("status").innerHTML =
-                    "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
+                    "โหลด hygge.csv | แสดงข้อมูลเดือนปัจจุบัน";
                 }
 
                 //document.getElementById("status").innerHTML = "โหลด hagga.csv | แสดงข้อมูลเดือนปัจจุบัน";
