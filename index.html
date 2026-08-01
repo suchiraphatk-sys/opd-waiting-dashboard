@@ -310,8 +310,13 @@
 
                 toDate.value = rawData[rawData.length - 1].date;
 
-                document.getElementById("status").innerHTML =
-                  "ไม่พบข้อมูลเดือนปัจจุบัน แสดงข้อมูลทั้งหมด";
+                if (uploadFileName) {
+                  document.getElementById("status").innerHTML =
+                    "โหลดจากไฟล์: " + uploadFileName;
+                } else {
+                  document.getElementById("status").innerHTML =
+                    "โหลด hygge.csv | ไม่พบข้อมูลเดือนปัจจุบัน แสดงข้อมูลทั้งหมด";
+                }
               }
 
               updateDashboard();
