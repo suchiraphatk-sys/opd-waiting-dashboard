@@ -73,6 +73,27 @@
 
         color: white;
       }
+
+      .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.chart-grid .panel {
+    margin-bottom: 0;
+}
+
+.chart-grid canvas {
+    width: 100% !important;
+}
+
+@media (max-width: 900px) {
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+}
+      
     </style>
   </head>
   <body>
@@ -151,6 +172,8 @@
       </table>
     </div>
 
+    <div class="chart-grid">
+      
     <div class="panel">
       <h3>Visit by Month</h3>
       <div style="height: 350px">
@@ -199,7 +222,8 @@
       </div>
     </div>
 
-
+</div>
+    
     <script>
       let uploadFileName = "";
       let monthlySummary = {};
